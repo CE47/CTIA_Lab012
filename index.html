@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CTI Casefile 012 — The Copy That Left the Building</title>
+<meta name="description" content="A beginner cyber threat intelligence investigation simulator. One case: a workstation copies 200 files from a restricted share onto an unregistered USB device, and the device leaves the building." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,700;0,6..96,900;1,6..96,400&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,600;1,6..72,300&family=Courier+Prime:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="style.css" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%231E1A14'/%3E%3Ccircle cx='16' cy='16' r='9' fill='none' stroke='%239B2C1F' stroke-width='2'/%3E%3Cpath d='M16 9v14M9 16h14' stroke='%239B2C1F' stroke-width='2'/%3E%3C/svg%3E" />
+</head>
+<body>
+<div class="grain" aria-hidden="true"></div>
+<div class="edge edge-left" aria-hidden="true"></div>
+<div class="edge edge-right" aria-hidden="true"></div>
+
+<!-- ============ HUD ============ -->
+<header class="hud" id="hud" hidden>
+  <div class="hud-case">
+    <span class="hud-ref" id="hudRef">CASE 012</span>
+    <span class="hud-title" id="hudTitle">Find the USB Copy</span>
+  </div>
+  <ol class="hud-steps" id="hudSteps" aria-label="Investigation stages"></ol>
+  <div class="hud-score">
+    <div class="xp" title="Experience points">
+      <span class="xp-label">XP</span>
+      <span class="xp-value"><span id="xpNow">0</span><i>/</i><span id="xpMax">100</span></span>
+    </div>
+    <div class="xp-bar"><i id="xpFill" style="width:0%"></i></div>
+    <div class="assist-wrap">
+      <button class="assist-btn" id="assistBtn" aria-haspopup="true" aria-expanded="false">
+        <span class="assist-dot"></span>ANALYST ASSIST
+        <em id="assistCount">0</em>
+      </button>
+      <div class="assist-menu" id="assistMenu" hidden></div>
+    </div>
+  </div>
+</header>
+
+<main id="app">
+
+  <!-- ============ 0 · BRIEFING ============ -->
+  <section class="screen screen-brief is-active" data-screen="brief">
+    <div class="brief">
+      <div class="brief-file">
+        <p class="file-tab">FILE / 012</p>
+        <div class="brief-head">
+          <p class="kicker">INTERNAL SECURITY OPERATIONS · TIER 1 ESCALATION DESK</p>
+          <h1 class="brief-title">CTI&nbsp;Casefile</h1>
+          <p class="brief-sub">Find the USB Copy</p>
+        </div>
+
+        <dl class="brief-grid">
+          <div><dt>Mission</dt><dd id="briefMission">—</dd></div>
+          <div><dt>Objective</dt><dd id="briefObjective">—</dd></div>
+          <div><dt>Asset</dt><dd id="briefHost">—</dd></div>
+          <div><dt>Difficulty</dt><dd id="briefDiff">—</dd></div>
+        </dl>
+
+        <p class="brief-note">
+          You have the raw event stream and three alerts. Nobody will tell you what to look for.
+          Work the way an analyst does: <em>observe, collect, correlate, explain, assess, report.</em>
+        </p>
+
+        <div class="brief-actions">
+          <button class="btn btn-major" id="startBtn">BEGIN INVESTIGATION</button>
+          <button class="btn btn-ghost" id="resetBtn" hidden>RESET CASEFILE</button>
+        </div>
+
+        <p class="brief-foot">
+          No account. No setup. No terminal. Progress is saved in this browser only.
+        </p>
+      </div>
+
+      <div class="brief-stamp" aria-hidden="true">
+        <span>CLASSIFIED</span>
+        <small>CTI · TRAINEE COPY</small>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ GENERIC STAGE HOST ============ -->
+  <section class="screen screen-stage" data-screen="stage" hidden>
+    <div class="stage-head">
+      <p class="stage-num" id="stageNum">STAGE 01</p>
+      <h2 class="stage-title" id="stageTitle">—</h2>
+      <p class="stage-brief" id="stageBrief">—</p>
+    </div>
+    <div class="stage-body" id="stageBody"></div>
+    <div class="stage-foot" id="stageFoot"></div>
+  </section>
+
+</main>
+
+<!-- ============ MODAL (evidence inspector / feedback) ============ -->
+<div class="modal" id="modal" hidden>
+  <div class="modal-scrim" data-close></div>
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <button class="modal-x" data-close aria-label="Close">✕</button>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<!-- ============ DEBRIEF ============ -->
+<div class="debrief" id="debrief" hidden>
+  <div class="debrief-sheet" role="dialog" aria-modal="true" aria-labelledby="debriefRank">
+    <div class="debrief-stamp" id="debriefStamp">FILED</div>
+    <p class="kicker">THREAT INTELLIGENCE ASSESSMENT · COMPLETE</p>
+    <h2 id="debriefRank">—</h2>
+    <p class="debrief-note" id="debriefNote">—</p>
+
+    <div class="debrief-grid">
+      <div class="debrief-score">
+        <p class="db-label">Final score</p>
+        <p class="db-score"><span id="dbScore">0</span><i>/100</i></p>
+        <p class="db-assist" id="dbAssist"></p>
+      </div>
+      <div class="debrief-breakdown" id="debriefBreakdown"></div>
+    </div>
+
+    <div class="debrief-iocs">
+      <p class="db-label">Indicators preserved</p>
+      <ul id="debriefIocs"></ul>
+    </div>
+
+    <div class="debrief-journal">
+      <p class="db-label">Analyst journal</p>
+      <div id="debriefJournal"></div>
+    </div>
+
+    <div class="debrief-actions">
+      <button class="btn btn-major" id="replayBtn">RE-RUN THE CASE</button>
+    </div>
+  </div>
+</div>
+
+<script src="scenarios/beginner-usb-data-copy-001.js"></script>
+<script src="board.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
